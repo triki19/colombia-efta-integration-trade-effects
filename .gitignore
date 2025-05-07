@@ -2,3 +2,4 @@
 /raw_data/
 *.csv
 /__pycache__/
+/Data_Processed/

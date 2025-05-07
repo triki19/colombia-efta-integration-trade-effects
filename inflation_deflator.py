@@ -1,11 +1,15 @@
 import pandas as pd
-from clear_data import df_trade
+import os
+
+# --- Cargar datos ---
+DB_TRADE = '/Data_Processed/trade_cleared.csv'
+df_trade = pd.read_csv(DB_TRADE, encoding='latin1')
 
 # --- Cargar índice de precios ---
-DB = 'consumer-price-index.csv'
+DB_INDEX = '/Data_Processed/consumer-price-index.csv'
 colums_to_load = ['Country Code', '2000', '2002', '2004', '2006', '2008','2010', '2012', '2014', '2016', '2018', '2020', '2022']
 
-df_deflator = pd.read_csv(DB, usecols=colums_to_load)
+df_deflator = pd.read_csv(DB_INDEX, usecols=colums_to_load)
 
 # --- Limpieza de datos ---
 df_deflator = df_deflator[df_deflator['Country Code'] == 'USA'] # Filtrar por Country Code
@@ -32,7 +36,31 @@ df_trade_deflated = pd.merge(df_trade, df_deflator[['Year', 'Deflator']], on='Ye
 # --- Calcular la columna de valor real ---
 df_trade_deflated['RealValue'] = df_trade_deflated['FOBValue'] / (df_trade_deflated['Deflator'] / 100)
 
-# Reformatear 'Year' porque me da TOC
-df_trade_deflated['Year'] = df_trade_deflated['Year'].astype('category')
+# --- Guardar el dataframe con la inflación deflactada ---
+def save_deflated_file(df_trade_deflated=df_trade_deflated):
+    try:
+        if os.path.exists('trade_deflated.csv'):
+            user_input = input('El archivo "trade_deflated.csv" ya existe. ¿Desea sobrescribirlo? (s/n): ').strip().lower()
 
-# print(df_trade_deflated.info())
+            if user_input == 's':
+                os.remove('trade_deflated.csv')
+                df_trade_deflated.to_csv('trade_deflated.csv', index=False, encoding='latin1')
+                print('El archivo "trade_deflated.csv" se sobrescribió.')
+            elif user_input == 'n':
+                print('El archivo "trade_deflated.csv" no se sobrescribió.')
+            else:
+                print('Opción no válida. El archivo "trade_deflated.csv" no se sobrescribió.')
+
+        else:
+            user_input = input('El archivo "trade_deflated.csv" no existe. ¿Desea crearlo? (s/n): ').strip().lower()
+            if user_input == 's':
+                df_trade_deflated.to_csv('trade_deflated.csv', index=False, encoding='latin1')
+                print('El archivo "trade_deflated.csv" se creó.')
+            else:
+                print('El archivo "trade_deflated.csv" no se creó.')
+
+    except Exception as e:
+        print(f'Error al guardar el archivo: {e}')
+
+print(df_trade_deflated.info())
+save_deflated_file()

@@ -1,9 +1,8 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-from trade_volume import tests, visualize
+import os
 
 # --- Carga de datos ---
-DB = 'datos_combinados.csv'
+DB = '/Data_Processed/datos_combinados.csv'
 df_trade = pd.read_csv(DB, encoding='latin1')
 
 # --- Limpieza de datos ---
@@ -21,18 +20,34 @@ df_trade.rename(columns={
 # Eliminar totales y valores para el Mundo
 df_trade = df_trade[~df_trade.isin(['TOTAL']).any(axis=1)]
 
-# Filtrar solo por capítulo
-df_trade['HSCode'] = df_trade['HSCode'].str[:2]
-
-# Modificar dtypes
-df_trade['HSCode'] = (df_trade['HSCode'].astype('category'))
-df_trade['Year'] = df_trade['Year'].astype('category')
-df_trade['Reporter'] = df_trade['Reporter'].astype('category')
-df_trade['Flow'] = df_trade['Flow'].astype('category')
-df_trade['Partner'] = df_trade['Partner'].astype('category')
-df_trade['FOBValue'] = df_trade['FOBValue'].astype('float64')
-
 # Modificar valores a miles de millones (usd)
 df_trade['FOBValue'] /= 1e6
 
+# --- Guardar el dataframe limpio ---
+def save_cleared_file(df_trade=df_trade):
+    try:
+        if os.path.exists('trade_cleared.csv'):
+            user_input = input('El archivo "trade_cleared.csv" ya existe. ¿Desea sobrescribirlo? (s/n): ').strip().lower()
+
+            if user_input == 's':
+                os.remove('trade_cleared.csv')
+                df_trade.to_csv('trade_cleared.csv', index=False, encoding='latin1')
+                print('El archivo "trade_cleared.csv" se sobrescribió.')
+            elif user_input == 'n':
+                print('El archivo "trade_cleared.csv" no se sobrescribió.')
+            else:
+                print('Opción no válida. El archivo "trade_cleared.csv" no se sobrescribió.')
+
+        else:
+            user_input = input('El archivo "trade_cleared.csv" no existe. ¿Desea crearlo? (s/n): ').strip().lower()
+            
+            if user_input == 's':
+                df_trade.to_csv('trade_cleared.csv', index=False, encoding='latin1')
+                print('El archivo "trade_cleared.csv" se creó.')
+            else:
+                print('El archivo "trade_cleared.csv" no se creó.')
+    except Exception as e:
+        print(f'Error al guardar el archivo: {e}')
+
 print(df_trade.info())
+save_cleared_file()
