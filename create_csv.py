@@ -2,7 +2,7 @@ import pandas as pd
 import os
 
 # --- 1. Define la lista de archivos ---
-lista_archivos = [f for f in os.listdir('.') if f.endswith('.csv')]
+lista_archivos = [f"raw_data/{f}" for f in os.listdir('raw_data') if f.endswith('.csv')]
 columns_to_load = ['refPeriodId', 'reporterISO', 'flowCode', 'partnerISO', 'isOriginalClassification', 'fobvalue']
 print(f"Se encontraron los siguientes archivos: {lista_archivos}")
 
