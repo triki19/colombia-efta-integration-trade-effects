@@ -2,11 +2,11 @@ import pandas as pd
 import os
 
 # --- Cargar datos ---
-DB_TRADE = '/Data_Processed/trade_cleared.csv'
+DB_TRADE = 'Data_Processed/trade_cleared.csv'
 df_trade = pd.read_csv(DB_TRADE, encoding='latin1')
 
 # --- Cargar índice de precios ---
-DB_INDEX = '/Data_Processed/consumer-price-index.csv'
+DB_INDEX = 'Data_Processed/consumer-price-index.csv'
 colums_to_load = ['Country Code', '2000', '2002', '2004', '2006', '2008','2010', '2012', '2014', '2016', '2018', '2020', '2022']
 
 df_deflator = pd.read_csv(DB_INDEX, usecols=colums_to_load)
@@ -39,25 +39,25 @@ df_trade_deflated['RealValue'] = df_trade_deflated['FOBValue'] / (df_trade_defla
 # --- Guardar el dataframe con la inflación deflactada ---
 def save_deflated_file(df_trade_deflated=df_trade_deflated):
     try:
-        if os.path.exists('trade_deflated.csv'):
-            user_input = input('El archivo "trade_deflated.csv" ya existe. ¿Desea sobrescribirlo? (s/n): ').strip().lower()
+        if os.path.exists('Data_Processed/trade_deflated.csv'):
+            user_input = input('El archivo "Data_Processed/trade_deflated.csv" ya existe. ¿Desea sobrescribirlo? (s/n): ').strip().lower()
 
             if user_input == 's':
-                os.remove('trade_deflated.csv')
-                df_trade_deflated.to_csv('trade_deflated.csv', index=False, encoding='latin1')
-                print('El archivo "trade_deflated.csv" se sobrescribió.')
+                os.remove('Data_Processed/trade_deflated.csv')
+                df_trade_deflated.to_csv('Data_Processed/trade_deflated.csv', index=False, encoding='latin1')
+                print('El archivo "Data_Processed/trade_deflated.csv" se sobrescribió.')
             elif user_input == 'n':
-                print('El archivo "trade_deflated.csv" no se sobrescribió.')
+                print('El archivo "Data_Processed/trade_deflated.csv" no se sobrescribió.')
             else:
-                print('Opción no válida. El archivo "trade_deflated.csv" no se sobrescribió.')
+                print('Opción no válida. El archivo "Data_Processed/trade_deflated.csv" no se sobrescribió.')
 
         else:
-            user_input = input('El archivo "trade_deflated.csv" no existe. ¿Desea crearlo? (s/n): ').strip().lower()
+            user_input = input('El archivo "Data_Processed/trade_deflated.csv" no existe. ¿Desea crearlo? (s/n): ').strip().lower()
             if user_input == 's':
-                df_trade_deflated.to_csv('trade_deflated.csv', index=False, encoding='latin1')
-                print('El archivo "trade_deflated.csv" se creó.')
+                df_trade_deflated.to_csv('Data_Processed/trade_deflated.csv', index=False, encoding='latin1')
+                print('El archivo "Data_Processed/trade_deflated.csv" se creó.')
             else:
-                print('El archivo "trade_deflated.csv" no se creó.')
+                print('El archivo "Data_Processed/trade_deflated.csv" no se creó.')
 
     except Exception as e:
         print(f'Error al guardar el archivo: {e}')
