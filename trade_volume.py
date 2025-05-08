@@ -132,40 +132,39 @@ except Exception as e:
 
 
 # --- Guardar resultados ---
-try:
-    # Diccionario que asocia nombres de archivos con DataFrames
-    dataframes_to_save = {
-        'Data_Processed/efta_imports.csv': efta_imports,
-        'Data_Processed/efta_exports.csv': efta_exports,
-        'Data_Processed/main_partners_imports.csv': main_partners_imports,
-        'Data_Processed/main_partners_exports.csv': main_partners_exports,
-        'Data_Processed/world_imports.csv': world_imports,
-        'Data_Processed/world_exports.csv': world_exports,
-        'Data_Processed/relative_efta_imports.csv': relative_efta_imports,
-        'Data_Processed/relative_efta_exports.csv': relative_efta_exports,
-        'Data_Processed/relative_world_imports.csv': relative_world_imports,
-        'Data_Processed/relative_world_exports.csv': relative_world_exports,
+dataframes_to_save = {
+    'Data_Processed/efta_imports.csv': efta_imports,
+    'Data_Processed/efta_exports.csv': efta_exports,
+    'Data_Processed/main_partners_imports.csv': main_partners_imports,
+    'Data_Processed/main_partners_exports.csv': main_partners_exports,
+    'Data_Processed/world_imports.csv': world_imports,
+    'Data_Processed/world_exports.csv': world_exports,
+    'Data_Processed/relative_efta_imports.csv': relative_efta_imports,
+    'Data_Processed/relative_efta_exports.csv': relative_efta_exports,
+    'Data_Processed/relative_world_imports.csv': relative_world_imports,
+    'Data_Processed/relative_world_exports.csv': relative_world_exports,
     }
+def save_results(dataframes_to_save=dataframes_to_save):
+    try:
+        # Crear el directorio si no existe
+        if not os.path.exists('Data_Processed'):
+            os.makedirs('Data_Processed')
 
-    # Crear el directorio si no existe
-    if not os.path.exists('Data_Processed'):
-        os.makedirs('Data_Processed')
+        # Guardar cada DataFrame en su archivo correspondiente
+        for file, dataframe in dataframes_to_save.items():
 
-    # Guardar cada DataFrame en su archivo correspondiente
-    for file, dataframe in dataframes_to_save.items():
+            if os.path.exists(file):
+                user_input = input(f"El archivo {file} ya existe. ¿Desea sobreescribirlo? (s/n): ").strip().lower()
+                if user_input == 's':
+                    os.remove(file)
+                    dataframe.to_csv(file, index=False)
+                    print(f"El archivo {file} se ha sobreescrito.")
+                else:
+                    print(f"El archivo {file} no se ha modificado.")
 
-        if os.path.exists(file):
-            user_input = input(f"El archivo {file} ya existe. ¿Desea sobreescribirlo? (s/n): ").strip().lower()
-            if user_input == 's':
-                os.remove(file)
-                dataframe.to_csv(file, index=False)
-                print(f"El archivo {file} se ha sobreescrito.")
             else:
-                print(f"El archivo {file} no se ha modificado.")
+                dataframe.to_csv(file, index=False)
+                print(f"El archivo {file} se ha guardado.")
 
-        else:
-            dataframe.to_csv(file, index=False)
-            print(f"El archivo {file} se ha guardado.")
-
-except Exception as e:
-    print(f"Error saving results: {e}")
+    except Exception as e:
+        print(f"Error saving results: {e}")
