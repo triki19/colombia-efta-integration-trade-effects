@@ -62,5 +62,5 @@ def save_deflated_file(df_trade_deflated=df_trade_deflated):
     except Exception as e:
         print(f'Error al guardar el archivo: {e}')
 
-print(df_trade_deflated.info())
-save_deflated_file()
+# print(df_trade_deflated.info())
+# save_deflated_file()

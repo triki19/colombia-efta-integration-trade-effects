@@ -49,5 +49,5 @@ def save_cleared_file(df_trade=df_trade):
     except Exception as e:
         print(f'Error al guardar el archivo: {e}')
 
-print(df_trade.info())
-save_cleared_file()
+# print(df_trade.info())
+# save_cleared_file()

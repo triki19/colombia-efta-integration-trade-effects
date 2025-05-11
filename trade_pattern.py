@@ -1,5 +1,6 @@
 import pandas as pd
-
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 # --- Cargar datos ---
 DB = 'Data_Processed/trade_deflated.csv'
@@ -199,11 +200,11 @@ def world_products():
 def efta_sectors():
     try:
         efta_import_sectors = SECTORS.query('Flow == "Import" and Partner in ["Switzerland", "Norway", "Iceland"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
         
         efta_export_sectors = SECTORS.query('Flow == "Export" and Partner in ["Switzerland", "Norway", "Iceland"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
 
         temp = []
@@ -232,11 +233,11 @@ def efta_sectors():
 def efta_industries():
     try:
         efta_import_industries = INDUSTRIES.query('Flow == "Import" and Partner in ["Switzerland", "Norway", "Iceland"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
         
         efta_export_industries = INDUSTRIES.query('Flow == "Export" and Partner in ["Switzerland", "Norway", "Iceland"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
 
         temp = []
@@ -265,11 +266,11 @@ def efta_industries():
 def efta_products():
     try:
         efta_import_products = PRODUCTS.query('Flow == "Import" and Partner in ["Switzerland", "Norway", "Iceland"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
         
         efta_export_products = PRODUCTS.query('Flow == "Export" and Partner in ["Switzerland", "Norway", "Iceland"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
 
         temp = []
@@ -300,11 +301,11 @@ def efta_products():
 def main_partners_sectors():
     try:
         main_partners_import_sectors = SECTORS.query('Flow == "Import" and Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
         
         main_partners_export_sectors = SECTORS.query('Flow == "Export" and Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
 
         temp = []
@@ -333,11 +334,11 @@ def main_partners_sectors():
 def main_partners_industries():
     try:
         main_partners_import_industries = INDUSTRIES.query('Flow == "Import" and Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
         
         main_partners_export_industries = INDUSTRIES.query('Flow == "Export" and Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
 
         temp = []
@@ -366,11 +367,11 @@ def main_partners_industries():
 def main_partners_products():
     try:
         main_partners_import_products = PRODUCTS.query('Flow == "Import" and Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
         
         main_partners_export_products = PRODUCTS.query('Flow == "Export" and Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-            .groupby(['Year', 'HSCode'])['RealValue']\
+            .groupby(['Year', 'HSCode', 'Partner'])['RealValue']\
             .sum().reset_index()
 
         temp = []
@@ -394,8 +395,3 @@ def main_partners_products():
 
     except Exception as e:
         print(f"Error calculating world sectors, industries, products: {e}")
-
-
-"""
-TODO: Puedo probar a agrupar por país para EFTA y principales socios
-"""
