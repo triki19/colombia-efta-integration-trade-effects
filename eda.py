@@ -24,7 +24,7 @@ DF['RealValueLog'] = np.log1p(DF['RealValue'])
 LOG_SCALES = [x for x in np.expm1(range(1,23))]
 
 # --- Funciones utilitarias
-
+## Agregar por dígitos HS
 def aggregate_hs(df: pd.DataFrame, hs:int = 2) -> pd.DataFrame:
     try:
         match hs:
@@ -45,8 +45,46 @@ def aggregate_hs(df: pd.DataFrame, hs:int = 2) -> pd.DataFrame:
     except Exception as e:
         print(f'Error agregando HS: {e}')
 
-# --- Clases ---
+## Visualizar gráficos
+def visualize(config:str='all') -> None:
+    try:
+        frames = [Frames.world_bilateral_trade(aggregate_hs(DF))\
+                , Frames.efta_bilateral_trade(aggregate_hs(DF))\
+                , Frames.mp_bilateral_trade(aggregate_hs(DF))]
 
+        match config:
+            case 'all':
+                for frame in frames:
+                        print(f'\nGraficando: {frame[0]}')
+                        EDA.bilateral_trade(frame[0])
+                        print(f'\nGraficando: {frame[1]}')
+                        EDA.hs_chapters(frame[1])
+                        print(f'\nGraficando: {frame[2]}')
+                        EDA.hs_chapters(frame[2])
+            case 'world':
+                EDA.bilateral_trade(frames[0][0])
+                EDA.hs_chapters(frames[0][1])
+                EDA.hs_chapters(frames[0][2])
+                return
+            case 'efta':
+                EDA.bilateral_trade(frames[1][0])
+                EDA.hs_chapters(frames[1][1])
+                EDA.hs_chapters(frames[1][2])
+                return
+            case 'mp':
+                EDA.bilateral_trade(frames[2][0])
+                EDA.hs_chapters(frames[2][1])
+                EDA.hs_chapters(frames[2][2])
+                return
+            case _:
+                print('Opción inválida. Intenta: all, world, efta, mp')
+                return               
+
+    except Exception as e:
+        print(f'Error graficando: {e}')
+
+# --- Clases ---
+## Construcción de gráficas
 class EDA:
 
     def bilateral_trade(df: pd.DataFrame) -> None:
@@ -89,8 +127,7 @@ class EDA:
         except Exception as e:
             print(f"Error en la hs_chapter: {e}")
 
-# --- Filtrado y Agrupación ---
-
+## Filtrado y Agrupación
 class Frames:
     def world_bilateral_trade(df:pd.DataFrame) -> tuple:
         """ Se utiliza un transformación logarítmica de la columna RealValue
@@ -122,7 +159,7 @@ class Frames:
         try:
             # Cual son los diez principales socios
             main_partners = df.query('Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
-                .groupby('Partner')['RealValue'].sum().nlargest(10).reset_index()
+                .groupby('Partner')['RealValue'].sum().nlargest(5).reset_index()
             
             # Comercio bilateral
             mp_bilateral_trade = df[df['Partner'].isin(main_partners['Partner'].unique())]
@@ -171,10 +208,3 @@ class Frames:
         except Exception as e:
             print(f'Error procesando efta_bilateral_trade: {e}')
             return
-
-#x, y, z = Frames.world_bilateral_trade(aggregate_hs(df=DF, hs=2))
-#a, b, c = Frames.mp_bilateral_trade(aggregate_hs(df=DF, hs=2))
-#print(y.query('HSCode == "31"'), z['HSCode'].unique())
-#x = aggregate_hs(DF).query('Partner not in ["Switzerland", "Norway", "Iceland", "World"]')
-#print(x['Partner'].unique())
-#EDA.bilateral_trade(x)
