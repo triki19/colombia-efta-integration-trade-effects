@@ -129,9 +129,9 @@ class EDA:
 
 ## Filtrado y Agrupación
 class Frames:
+        
+    @staticmethod
     def world_bilateral_trade(df:pd.DataFrame) -> tuple:
-        """ Se utiliza un transformación logarítmica de la columna RealValue
-        para eliminar el ruido de los valores atípicos y poder observar los patrones de los datos. """
         try:
             
             # Comercio bilateral
@@ -155,6 +155,7 @@ class Frames:
         except Exception as e:
             print(f'Error construyendo world_bilateral_trade: {e}')
 
+    @staticmethod
     def mp_bilateral_trade(df:pd.DataFrame) -> tuple:
         try:
             # Cual son los diez principales socios
@@ -183,7 +184,8 @@ class Frames:
         except Exception as e:
             print(f'Error procesando mp_bilateral_trade: {e}')
             return
-        
+
+    @staticmethod    
     def efta_bilateral_trade(df:pd.DataFrame) -> tuple:
         try:
             # Comercio bilateral
@@ -208,3 +210,75 @@ class Frames:
         except Exception as e:
             print(f'Error procesando efta_bilateral_trade: {e}')
             return
+    
+    @staticmethod
+    def partner_groups(df:pd.DataFrame=DF) -> pd.DataFrame:
+        try:
+            top_partners = df.query('Partner not in ["Switzerland", "Norway", "Iceland", "World"]')\
+                .groupby('Partner')['RealValue']\
+                .sum().nlargest(10).index.tolist()
+           
+            conditions = [df['Partner'] == 'Switzerland',
+                          df['Partner'] == 'Norway',
+                          df['Partner'] == 'Iceland',
+                          df['Partner'] == 'World',
+                          df['Partner'].isin(top_partners)]
+            choices = ['EFTA', 'EFTA', 'EFTA', 'World', 'Primary']
+            
+            df['PartnerGroup'] = np.select(conditions, choices, default='Secundary')
+            
+            return df
+
+        except Exception as e:
+            print(f'Error in partner_groups: {e}')
+            return pd.DataFrame()
+
+    @staticmethod
+    def time_groups(df:pd.DataFrame=None) -> pd.DataFrame:
+        try:
+            if df is None or df.empty:
+                df = Frames.partner_groups()
+            if df is None or df.empty:
+                raise ValueError('df not passed or partner_groups returned None or empty')
+                
+            df['Year'] = df['Year'].astype('Int16')
+
+            df_2000_2010 = df[df['Year'] <= 2010].copy().reset_index(drop=True)
+            df_2012_2022 = df[df['Year'] >= 2012].copy().reset_index(drop=True)
+
+            df_2000_2010['Year'] = df_2000_2010['Year'].astype('str')
+            df_2012_2022['Year'] = df_2012_2022['Year'].astype('str')
+
+            return [df_2000_2010, df_2012_2022]
+
+        except Exception as e:
+            print(f'Error in time_groups: {e}')
+
+    @staticmethod
+    def yearly_growth_rate(time_groups:list=None) -> pd.DataFrame:
+        try:
+            if time_groups:
+                df_2000_2010, df_2012_2022 = time_groups
+            else:
+                time_groups = Frames.time_groups()
+                if time_groups is None:
+                    raise ValueError('time_groups returned None')
+                df_2000_2010, df_2012_2022 = time_groups
+            
+            df_2000_2010 = df_2000_2010.query('PartnerGroup == "EFTA"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+            df_2000_2010['GrowthRate'] = df_2000_2010.groupby('Flow')['RealValue'].pct_change().fillna(0)
+            df_2000_2010['GrowthRate'] *= 100
+
+            df_2012_2022 = df_2012_2022.query('PartnerGroup == "EFTA"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+            df_2012_2022['GrowthRate'] = df_2012_2022.groupby('Flow')['RealValue'].pct_change().fillna(0)
+            df_2012_2022['GrowthRate'] *= 100
+
+            # TODO: continuar con los grupos faltantes
+            
+
+            print(df_2000_2010)
+            print(df_2012_2022)
+        except Exception as e:
+            print(f'Error in yearly_growth_rate: {e}')
+
+#Frames.yearly_growth_rate()
