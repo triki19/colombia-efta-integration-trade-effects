@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+import matplotlib.ticker as ticker
 import seaborn as sns
 import numpy as np
 
@@ -41,91 +42,14 @@ def aggregate_hs(df: pd.DataFrame, hs:int = 2) -> pd.DataFrame:
                 print(f'Opción {hs} inválida. Opciones válidas: 2, 4, 6')
                 return 
 
+        print(df['RealValue'].describe())
         return df
     except Exception as e:
         print(f'Error agregando HS: {e}')
 
-## Visualizar gráficos
-def visualize(config:str='all') -> None:
-    try:
-        frames = [Frames.world_bilateral_trade(aggregate_hs(DF))\
-                , Frames.efta_bilateral_trade(aggregate_hs(DF))\
-                , Frames.mp_bilateral_trade(aggregate_hs(DF))]
-
-        match config:
-            case 'all':
-                for frame in frames:
-                        print(f'\nGraficando: {frame[0]}')
-                        EDA.bilateral_trade(frame[0])
-                        print(f'\nGraficando: {frame[1]}')
-                        EDA.hs_chapters(frame[1])
-                        print(f'\nGraficando: {frame[2]}')
-                        EDA.hs_chapters(frame[2])
-            case 'world':
-                EDA.bilateral_trade(frames[0][0])
-                EDA.hs_chapters(frames[0][1])
-                EDA.hs_chapters(frames[0][2])
-                return
-            case 'efta':
-                EDA.bilateral_trade(frames[1][0])
-                EDA.hs_chapters(frames[1][1])
-                EDA.hs_chapters(frames[1][2])
-                return
-            case 'mp':
-                EDA.bilateral_trade(frames[2][0])
-                EDA.hs_chapters(frames[2][1])
-                EDA.hs_chapters(frames[2][2])
-                return
-            case _:
-                print('Opción inválida. Intenta: all, world, efta, mp')
-                return               
-
-    except Exception as e:
-        print(f'Error graficando: {e}')
+DF = aggregate_hs(DF)
 
 # --- Clases ---
-## Construcción de gráficas
-class EDA:
-
-    def bilateral_trade(df: pd.DataFrame) -> None:
-        try:
-            fig = plt.figure(figsize=(10,14))
-            gs = gridspec.GridSpec(ncols=2, nrows=2, figure=fig)
-            x, y, hue = df['Year'], df['RealValueLog'], df['Flow']
-            ax00 = fig.add_subplot(gs[0, 0])
-            ax01 = fig.add_subplot(gs[0, 1])
-            ax10 = fig.add_subplot(gs[1, :])
-
-            sns.lineplot(x=x, y=y, hue=hue, ax=ax00)
-            ax00.set_title('Continuidad')
-
-            sns.histplot(x=y, hue=hue, multiple='stack', kde=True, ax=ax01)
-            ax01.set_title('Distribución de frecuencia')
-
-            sns.boxplot(x=y, hue=hue, ax=ax10)
-            ax10.set_title('Distribución por quantiles')
-            
-            plt.tight_layout()
-            plt.show()
-        except Exception as e:
-            print(f"Error en 'world_trade': {e}")
-
-    def hs_chapters(df_top_hs:pd.DataFrame) -> None:
-        try:
-            fig, axs = plt.subplots(ncols=2, figsize=(10,14))
-            x, y, hue = df_top_hs['HSCode'], df_top_hs['RealValueLog'], df_top_hs['Partner']
-
-            sns.histplot(x=x, y=y, hue=hue, ax=axs[0])
-            axs[0].set_title('Distribución Bivariada')
-
-            sns.boxplot(x=x, y=y, hue=hue, ax=axs[1])
-            axs[1].set_title('Comparación de Distribuciones')
-
-            plt.tight_layout()
-            plt.show()
-
-        except Exception as e:
-            print(f"Error en la hs_chapter: {e}")
 
 ## Filtrado y Agrupación
 class Frames:
@@ -255,30 +179,158 @@ class Frames:
             print(f'Error in time_groups: {e}')
 
     @staticmethod
-    def yearly_growth_rate(time_groups:list=None) -> pd.DataFrame:
+    def yearly_growth_rate(time_groups:list=None, who:str='all') -> pd.DataFrame:
+        if time_groups:
+            df_2000_2010, df_2012_2022 = time_groups
+        else:
+            time_groups = Frames.time_groups()
+            if time_groups is None:
+                raise ValueError('time_groups returned None')
+            df_2000_2010, df_2012_2022 = time_groups
+
+        def efta_growth_rate() -> pd.DataFrame:
+            try:            
+                # Tasa de Crecimiento para EFTA: 2000-2010
+                efta_2000_2010 = df_2000_2010.query('PartnerGroup == "EFTA"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                efta_2000_2010['GrowthRate'] = efta_2000_2010.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                efta_2000_2010['GrowthRate'] *= 100
+
+                # Tasa de Crecimiento para EFTA: 2012-2022
+                efta_2012_2022 = df_2012_2022.query('PartnerGroup == "EFTA"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                efta_2012_2022['GrowthRate'] = efta_2012_2022.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                efta_2012_2022['GrowthRate'] *= 100
+
+                return [efta_2000_2010, efta_2012_2022]
+            except Exception as e:
+                print(f'Error in efta_growth_rate(): {e}')
+
+        def mpp_growth_rate() -> list[pd.DataFrame]:
+            try:
+                # Tasa de Crecimiento para Secundary Partners: 2000-2010
+                mpp_2000_2010 = df_2000_2010.query('PartnerGroup == "Primary"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                mpp_2000_2010['GrowthRate'] = mpp_2000_2010.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                mpp_2000_2010['GrowthRate'] *= 100
+
+                # Tasa de Crecimiento para Primary Partners: 2012-2022
+                mpp_2012_2022 = df_2012_2022.query('PartnerGroup == "Primary"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                mpp_2012_2022['GrowthRate'] = mpp_2012_2022.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                mpp_2012_2022['GrowthRate'] *= 100
+
+                return [mpp_2000_2010, mpp_2012_2022]
+            except Exception as e:
+                print(f'Error in mpp_growth_rate(): {e}')
+
+        def mps_growth_rate() -> list[pd.DataFrame]:
+            try:
+                # Tasa de Crecimiento para Secundary Partners: 2000-2010
+                mps_2000_2010 = df_2000_2010.query('PartnerGroup == "Secundary"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                mps_2000_2010['GrowthRate'] = mps_2000_2010.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                mps_2000_2010['GrowthRate'] *= 100
+
+                # Tasa de Crecimiento para Secundary Partners: 2012-2022
+                mps_2012_2022 = df_2012_2022.query('PartnerGroup == "Secundary"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                mps_2012_2022['GrowthRate'] = mps_2012_2022.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                mps_2012_2022['GrowthRate'] *= 100
+
+                return [mps_2000_2010, mps_2012_2022]
+            except Exception as e:
+                print(f'Error in mps_growth_rate(): {e}')
+
+        def world_growth_rate() -> list[pd.DataFrame]:
+            try:
+                efta_2000_2010, efta_2012_2022 = efta_growth_rate()
+                mpp_2000_2010, mpp_2012_2022 = mpp_growth_rate()
+                mps_2000_2010, mps_2012_2022 = mps_growth_rate()
+                # Tasa de Crecimiento para el Resto del Mundo: 2000-2010
+                world_2000_2010 = df_2000_2010.query('PartnerGroup == "World"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                world_2000_2010['RealValue'] -= (efta_2000_2010['RealValue'] + mpp_2000_2010['RealValue'] + mps_2000_2010['RealValue'])
+                world_2000_2010['GrowthRate'] = world_2000_2010.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                world_2000_2010['GrowthRate'] *= 100
+
+                # Tasa de Crecimiento para el Resto del Mundo: 2012-2022
+                world_2012_2022 = df_2012_2022.query('PartnerGroup == "World"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
+                world_2012_2022['RealValue'] -= (efta_2012_2022['RealValue'] + mpp_2012_2022['RealValue'] + mps_2012_2022['RealValue'])
+                world_2012_2022['GrowthRate'] = world_2012_2022.groupby('Flow')['RealValue'].pct_change().fillna(0)
+                world_2012_2022['GrowthRate'] *= 100                 
+            
+                return [world_2000_2010, world_2012_2022]
+            except Exception as e:
+                print(f'Error in world_growth_rate(): {e}')
+
+
+        def all_growth_rates() -> pd.DataFrame:
+            try:
+                efta1, efta2 = efta_growth_rate()
+                mpp1, mpp2 = mpp_growth_rate()
+                mps1, mps2 = mps_growth_rate()
+                world1, world2 = world_growth_rate()
+                frames = [efta1, efta2, mpp1, mpp2,
+                          mps1, mps2, world1, world2]
+                keys = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+                
+                all = pd.concat(frames, keys=keys)
+                all.loc['a':'b', 'PartnerGroup'] = 'EFTA'
+                all.loc['c':'d', 'PartnerGroup'] = 'Primary'
+                all.loc['e':'f', 'PartnerGroup'] = 'Secundary'
+                all.loc['g':'h', 'PartnerGroup'] = 'World'
+
+                return all
+
+            except Exception as e:
+                print(f'Error in all_growth_rates: {e}')
+
+        match who:
+            case 'all':
+                return all_growth_rates()
+            case 'world':        
+                return world_growth_rate()
+            case 'mpp':
+                return mpp_growth_rate()
+            case 'mps':
+                return mps_growth_rate()
+            case 'efta':
+                return efta_growth_rate()
+            case _:
+                print('Opción inválida. Prueba: world, mpp, mps, efta')
+            
+
+## Construcción de gráficas
+class EDA:
+
+    def distribution() -> None:
         try:
-            if time_groups:
-                df_2000_2010, df_2012_2022 = time_groups
-            else:
-                time_groups = Frames.time_groups()
-                if time_groups is None:
-                    raise ValueError('time_groups returned None')
-                df_2000_2010, df_2012_2022 = time_groups
-            
-            df_2000_2010 = df_2000_2010.query('PartnerGroup == "EFTA"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
-            df_2000_2010['GrowthRate'] = df_2000_2010.groupby('Flow')['RealValue'].pct_change().fillna(0)
-            df_2000_2010['GrowthRate'] *= 100
+            df = Frames.partner_groups(DF)
 
-            df_2012_2022 = df_2012_2022.query('PartnerGroup == "EFTA"').groupby(['Flow', 'Year'])['RealValue'].sum().reset_index()
-            df_2012_2022['GrowthRate'] = df_2012_2022.groupby('Flow')['RealValue'].pct_change().fillna(0)
-            df_2012_2022['GrowthRate'] *= 100
+            fig, axs = plt.subplots(nrows=2)
+            sns.histplot(x=df['RealValueLog'], hue=df["Flow"], kde=True, ax=axs[0])
+            sns.boxplot(x=df['RealValueLog'], hue=df['Flow'], ax=axs[1])
 
-            # TODO: continuar con los grupos faltantes
-            
+            plt.show()
 
-            print(df_2000_2010)
-            print(df_2012_2022)
         except Exception as e:
-            print(f'Error in yearly_growth_rate: {e}')
+            print(f"Error en 'world_trade': {e}")
 
-#Frames.yearly_growth_rate()
+    def growth_rate() -> None:
+        try:
+            tms1 = Frames.yearly_growth_rate(who='all')
+            tms1['GrowthRate'] = np.log1p(tms1['GrowthRate'])
+            fig, axs = plt.subplots(nrows=2)
+            sns.lineplot(x=tms1['Year'], y=tms1['GrowthRate'], hue=tms1['PartnerGroup'], style=tms1['Flow'], errorbar=None, ax=axs[0])
+            sns.boxplot(x=tms1['GrowthRate'], hue=tms1['Flow'])
+            plt.show()
+        
+        except Exception as e:
+            print(f'Error in growth_rate: {e}')
+
+    def trade_magnitude() -> None:
+        try:
+            df = Frames.partner_groups().query('PartnerGroup != "World"')
+
+            fig, ax = plt.subplots()
+            sns.lineplot(x=df['Year'], y=df['RealValueLog'], hue=df['PartnerGroup'], style=df['Flow'], errorbar=None)
+            ax.set_title('Comparación de Tendencias: 2000-2022')
+            plt.show()
+        except Exception as e:
+            print(f'Error in trade_magniude: {e}')
+
+#EDA.growth_rate()
